@@ -19,6 +19,7 @@ protocol DetailViewControllerDelegate: AnyObject {
 }
 
 final class DetailBoardViewController: BaseViewController {
+    var previewData: DetailBoardDataModel?
     var postId: Int?
     var isHeart = Bool()
     var isScrap = Bool()
@@ -342,7 +343,7 @@ final class DetailBoardViewController: BaseViewController {
         }
         stackView.addArrangedSubviews(titleLabel,infoView, contentStackView)
         contentStackView.addArrangedSubviews(recruitStackView, partStackView,tagStackView, imageScrollView)
-        recruitStackView.addArrangedSubviews(recruitLabel, recruitContentLabel)
+        recruitStackView.addArrangedSubviews(recruitLabel, markdownView)
         partStackView.addArrangedSubviews(partLabel, partContentLabel)
         tagStackView.addArrangedSubviews(tagLabel, tagContentLabel)
         
@@ -517,58 +518,68 @@ func getTopMostViewController() -> UIViewController? {
     }
 
     func getDetailBoard( boardId: Int) {
-        if let token = self.keychain.get("accessToken") {
-            print("\(token)")
-            BoardAPI.shared.getDetailBoard(token: token, boardId: boardId) { result in
-                switch result {
-                case .success(let data):
-                    if let data = data as? DetailBoardDTO{
-                        let serverData = data.data
-                        if let validImageId = data.data.imageId {
-                            self.imageId = validImageId
-                        }
-                        let mappedItem = DetailBoardDataModel(boardId: data.data.boardId, title: data.data.title, createAt: data.data.createAt, category: data.data.category ?? "nil", contents: data.data.contents ?? "nil" , tag: data.data.tag ?? nil, count: data.data.count, heart: data.data.heart, imageUrl: data.data.imageUrl, nickName: data.data.nickName ?? "nil", occupation: data.data.occupation ?? "nil", isHeart: data.data.isHeart, isScrap: data.data.isScrap, commentCount: data.data.commentCount, part: data.data.part ?? "nil", email: data.data.email ?? "" , picture: data.data.picture ?? "")
-                        self.isHeart = data.data.isHeart
-                        self.isScrap = data.data.isScrap
-                        self.imageUrl = data.data.imageUrl ?? []
-                        self.isMyPost = data.data.email == self.keychain.get("currentUserEmail")
-                        self.markdownView.load(markdown: data.data.contents ?? "")
-                        if self.isMyPost {
-                            self.chatButton.isHidden = true
-                        }
-                        else {
-                            self.chatButton.isHidden = false
-                        }
-                        DispatchQueue.main.async { [self] in
-                            self.setUI()
-                            category = mappedItem.category
-                            switch category {
-                            case "프로젝트":
-                                self.setLayoutProject()
-                            case "자유":
-                                self.setLayoutFree()
-                            case "공지사항":
-                                self.setNoticeLayout()
-                            default:
-                                break
+        if boardId == -1{
+            print("Preview")
+            DispatchQueue.main.async {
+                self.setUI()
+                self.markdownView.load(markdown: self.previewData!.contents)
+                self.setLayoutProject()
+                self.updateView(with: self.previewData!)
+            }
+        }else{
+            if let token = self.keychain.get("accessToken") {
+                print("\(token)")
+                BoardAPI.shared.getDetailBoard(token: token, boardId: boardId) { result in
+                    switch result {
+                    case .success(let data):
+                        if let data = data as? DetailBoardDTO{
+                            let serverData = data.data
+                            if let validImageId = data.data.imageId {
+                                self.imageId = validImageId
                             }
-                            self.updateView(with: mappedItem)
+                            let mappedItem = DetailBoardDataModel(boardId: data.data.boardId, title: data.data.title, createAt: data.data.createAt, category: data.data.category ?? "nil", contents: data.data.contents ?? "nil" , tag: data.data.tag ?? nil, count: data.data.count, heart: data.data.heart, imageUrl: data.data.imageUrl, nickName: data.data.nickName ?? "nil", occupation: data.data.occupation ?? "nil", isHeart: data.data.isHeart, isScrap: data.data.isScrap, commentCount: data.data.commentCount, part: data.data.part ?? "nil", email: data.data.email ?? "" , picture: data.data.picture ?? "")
+                            self.isHeart = data.data.isHeart
+                            self.isScrap = data.data.isScrap
+                            self.imageUrl = data.data.imageUrl ?? []
+                            self.isMyPost = data.data.email == self.keychain.get("currentUserEmail")
+                            self.markdownView.load(markdown: data.data.contents ?? "")
+                            if self.isMyPost {
+                                self.chatButton.isHidden = true
+                            }
+                            else {
+                                self.chatButton.isHidden = false
+                            }
+                            DispatchQueue.main.async { [self] in
+                                self.setUI()
+                                category = mappedItem.category
+                                switch category {
+                                case "프로젝트":
+                                    self.setLayoutProject()
+                                case "자유":
+                                    self.setLayoutFree()
+                                case "공지사항":
+                                    self.setNoticeLayout()
+                                default:
+                                    break
+                                }
+                                self.updateView(with: mappedItem)
+                            }
                         }
+                    case .requestErr(let message):
+                        print("Request error: \(message)")
+                        
+                    case .pathErr:
+                        print("Path error")
+                        
+                    case .serverErr:
+                        print("Server error")
+                        
+                    case .networkFail:
+                        print("Network failure")
+                        
+                    default:
+                        break
                     }
-                case .requestErr(let message):
-                    print("Request error: \(message)")
-                    
-                case .pathErr:
-                    print("Path error")
-                    
-                case .serverErr:
-                    print("Server error")
-                    
-                case .networkFail:
-                    print("Network failure")
-                    
-                default:
-                    break
                 }
             }
         }
