@@ -76,7 +76,7 @@ class AddProjectPostViewController: UIViewController {
         checkbox.addGestureRecognizer(gesture)
         return checkbox
     }()
-
+    private let previewButton = UIButton()
     @objc private func didTapCheckbox(_ sender: UITapGestureRecognizer) {
         guard let checkbox = sender.view as? Checkbox else { return }
         checkbox.toggle()
@@ -213,6 +213,14 @@ class AddProjectPostViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             $0.isUserInteractionEnabled = true
         }
+        //previewButton
+        previewButton.do {
+            $0.setTitle("미리보기", for: .normal)
+            $0.setTitleColor(.white, for: .normal)
+            $0.backgroundColor = .blue
+            $0.layer.cornerRadius = 8
+            $0.addTarget(self, action: #selector(previewButtonTapped), for: .touchUpInside)
+        }
     }
     
     private func setLayout() {
@@ -226,7 +234,7 @@ class AddProjectPostViewController: UIViewController {
             $0.edges.equalToSuperview()
             $0.width.equalToSuperview()
         }
-        stackView.addArrangedSubviews(sortStackView, lineView1, titleTextField, lineView2, contentStackView)
+        stackView.addArrangedSubviews(sortStackView, lineView1, titleTextField, lineView2, contentStackView,previewButton)
         contentStackView.addArrangedSubviews(recruitStackView, partStackView,tagStackView, imageScrollView)
         recruitStackView.addArrangedSubviews(recruitLabel, recruitContentTextField, warnView)
         partStackView.addArrangedSubview(partLabel)
@@ -241,6 +249,13 @@ class AddProjectPostViewController: UIViewController {
         tagRadioButton.delegate = self
         imageScrollView.snp.makeConstraints {
             $0.height.equalTo(144)
+        }
+        //TODO : PreViewButton
+        previewButton.snp.makeConstraints {
+            $0.height.equalTo(48)
+            $0.leading.equalToSuperview().offset(16)
+            $0.trailing.equalToSuperview().offset(-16)
+            $0.top.equalTo(imageScrollView.snp.bottom).offset(16)
         }
         sortStackView.snp.makeConstraints {
 //            $0.top.equalTo(self.view.safeAreaLayoutGuide.snp.top)
@@ -441,6 +456,31 @@ class AddProjectPostViewController: UIViewController {
             xOffset += 156
         }
         imageScrollView.contentSize = CGSize(width: xOffset, height: 144)
+    }
+    
+    @objc func previewButtonTapped(){
+//        let result = self.deleteImages.filter { !self.imageUrls.contains($0) }
+//        self.deletePhoto(imageIds: result)
+//        self.delegate?.didPostArticle()
+        let previewVC = DetailBoardViewController()
+        let navController = UINavigationController(rootViewController: previewVC)
+                
+        previewVC.modalPresentationStyle = .overFullScreen
+        previewVC.postId = -1
+        var checkedPartText = ""
+        for checkbox in checkboxes {
+            if checkbox.isChecked, let checkBoxText = checkbox.label.text {
+                if checkedPartText == "" {
+                    checkedPartText += checkBoxText
+                }
+                else {
+                    checkedPartText += "," + checkBoxText
+                }
+            }
+        }
+        previewVC.previewData = DetailBoardDataModel.init(boardId: -1, title: titleTextField.text ?? " ", createAt: "지금날짜", category: sortLabel.text ?? "프로젝트", contents: recruitContentTextField.text ?? " ", tag: tagRadioButton.getSelectedText() ?? "", count: 0, heart: 0, imageUrl: [""], nickName: " ", occupation: " ", isHeart: false, isScrap: false, commentCount: 0, part: checkedPartText, email: " ", picture: " ")
+        navController.modalPresentationStyle = .fullScreen
+        present(navController, animated: true, completion: nil)
     }
 }
 
