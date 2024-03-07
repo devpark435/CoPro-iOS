@@ -459,9 +459,6 @@ class AddProjectPostViewController: UIViewController {
     }
     
     @objc func previewButtonTapped(){
-//        let result = self.deleteImages.filter { !self.imageUrls.contains($0) }
-//        self.deletePhoto(imageIds: result)
-//        self.delegate?.didPostArticle()
         let previewVC = DetailBoardViewController()
         let navController = UINavigationController(rootViewController: previewVC)
                 
